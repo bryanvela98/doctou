@@ -5,37 +5,57 @@ const doctors = {
     "Dr. Mario": ["10:30 AM", "11:30 AM", "1:30 PM", "2:30 PM"]
 };
 
-function scheduleAppointment() {
-    // Displaying all doctors
+// Displaying all doctors
+function displayDoctors() {
     let doctorNames = Object.keys(doctors);
     let doctorList = "Seleccione un doctor:\n";
     for (let i = 0; i < doctorNames.length; i++) {
         doctorList += (i + 1) + ". " + doctorNames[i] + "\n";
-    }  
-    // Saving a doctor choice in a variable
-    let doctorChoice = parseInt(prompt(doctorList)) - 1;
+    }
+    return doctorList;
+}
 
-    // Check if the choosen doctor is available
+// Display available time slots for the selected doctor
+function displayTimeSlots(doctorName) {
+    let timeSlots = doctors[doctorName];
+    let timeSlotList = "Tiempos disponibles para " + doctorName + ":\n";
+    for (let i = 0; i < timeSlots.length; i++) {
+        timeSlotList += (i + 1) + ". " + timeSlots[i] + "\n";
+    }
+    return timeSlotList;
+}
+
+
+// Saving a doctor choice
+function getDoctorChoice() {
+    let doctorList = displayDoctors();
+    let doctorChoice = parseInt(prompt(doctorList)) - 1;
+    return doctorChoice;
+}
+
+// Saving the picked slot choice
+function getTimeSlotChoice(doctorName) {
+    let timeSlotList = displayTimeSlots(doctorName);
+    let timeSlotChoice = parseInt(prompt(timeSlotList)) - 1;
+    return timeSlotChoice;
+}
+
+//main function
+function scheduleAppointment() {
+    let doctorNames = Object.keys(doctors);
+    let doctorChoice = getDoctorChoice();
+
     if (doctorChoice >= 0 && doctorChoice < doctorNames.length) {
         let selectedDoctor = doctorNames[doctorChoice];
-        let timeSlots = doctors[selectedDoctor];
+        let timeSlotChoice = getTimeSlotChoice(selectedDoctor);
 
-        // Display available time slots for the selected doctor
-        let timeSlotList = "Espacio disponible para " + selectedDoctor + ":\n";
-        for (let i = 0; i < timeSlots.length; i++) {
-            timeSlotList += (i + 1) + ". " + timeSlots[i] + "\n";
-        }
-        // Saving the picked slot choice in a variable
-        let timeSlotChoice = parseInt(prompt(timeSlotList)) - 1;
-
-        // Check if the time slot choice is valid
-        if (timeSlotChoice >= 0 && timeSlotChoice < timeSlots.length) {
-            let selectedTimeSlot = timeSlots[timeSlotChoice];
-            alert("Su cita con " + selectedDoctor + " esta confirmada para " + selectedTimeSlot + ".");
+        if (timeSlotChoice >= 0 && timeSlotChoice < doctors[selectedDoctor].length) {
+            let selectedTimeSlot = doctors[selectedDoctor][timeSlotChoice];
+            alert("Tu cita con " + selectedDoctor + " esta confirmada a las " + selectedTimeSlot + " horas.");
         } else {
-            alert("Espacio elegido no disponible. Por favor intente nuevamente con otro horario.");
+            alert("Horario seleccionado no disponible. Por favor, seleccione otro.");
         }
     } else {
-        alert("Doctor elegido no disponible. Por favor intente nuevamente con otro doctor.");
+        alert("Doctor seleccionado no disponible. Por favor, seleccione otro doctor.");
     }
 }
