@@ -53,9 +53,9 @@ function scheduleAppointment() {
             let selectedTimeSlot = doctors[selectedDoctor][timeSlotChoice];
             alert("Tu cita con " + selectedDoctor + " esta confirmada a las " + selectedTimeSlot + " horas.");
         } else {
-            alert("Horario seleccionado no disponible. Por favor, seleccione otro.");
+            alert("Horario seleccionado invalido. Por favor, intente de nuevo.");
         }
     } else {
-        alert("Doctor seleccionado no disponible. Por favor, seleccione otro doctor.");
+        alert("Doctor seleccionado invalido. Por favor, intente de nuevo.");
     }
 }
