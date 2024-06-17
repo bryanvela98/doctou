@@ -1,12 +1,28 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Mi Cita Medica Virtual</title>
+    <link rel="stylesheet" type="text/css" href="/css/styles.css">
 </head>
+
 <body>
-    <h1>Programador de Citas Médicas Virtuales</h1>
-    <button onclick="scheduleAppointment()">Programe su cita</button>
+    <div class="container">
+        <h1>Programador de Citas Virtuales</h1>
+        <input type="text" id="roleInput" placeholder="Ingrese 0 si es admin, 1 si es paciente" style="width: 50%">
+        <button class="button" onclick="setRole()">Enter</button>
+        <div id="adminControls" style="display: none;">
+            <button class="button" onclick="modifyDoctorInfo()">Modificar Información de Doctor</button>
+            <button class="button" onclick="modifyAppointments()">Modificar Citas</button>
+        </div>
+        <div id="patientControls" style="display: none;">
+            <button class="button" onclick="scheduleAppointment()">Programar una Cita</button>
+            <button class="button" onclick="showDoctors()">Mostrar Doctores</button>
+        </div>
+        <div id="output"></div>
+    </div>
 
     <script src="script.js"></script>
 </body>
+
 </html>
