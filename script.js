@@ -1,28 +1,41 @@
-// examp. of some doctors
-const doctors = {
+// Example of some doctors
+const doctors = JSON.parse(localStorage.getItem('doctors')) || {
     "Bryan": ["10:00 AM", "11:00 AM", "1:00 PM", "3:00 PM"],
     "Pedro": ["9:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"],
     "Mario": ["10:30 AM", "11:30 AM", "1:30 PM", "2:30 PM"]
 };
 
-const doctorDescriptions = {
+const doctorDescriptions = JSON.parse(localStorage.getItem('doctorDescriptions')) || {
     "Bryan": "Especialista en cardiologia con 10 años de experiencia.",
     "Pedro": "Experto en neurología con foco en epilepsias.",
     "Mario": "Medico general."
 };
 
+const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+
+// Save doctors, descriptions, and appointments to localStorage
+function saveData() {
+    localStorage.setItem('doctors', JSON.stringify(doctors));
+    localStorage.setItem('doctorDescriptions', JSON.stringify(doctorDescriptions));
+    localStorage.setItem('appointments', JSON.stringify(appointments));
+}
+
 // Function to handle key press events
-function handleKeyPress(event) {
+document.getElementById('roleInput').addEventListener('keypress', function (event) {
     if (event.key === 'Enter') {
         setRole();
     }
-}
+});
+
 // Role of the user: 0 for admin, 1 for patient
 let role = null;
 
 // Function to set the role and display relevant controls
 function setRole() {
     role = parseInt(document.getElementById("roleInput").value);
+    const outputDiv = document.getElementById("output");
+    outputDiv.innerHTML = ""; // Clear the output div
+
     if (role === 0) {
         document.getElementById("adminControls").style.display = 'block';
         document.getElementById("patientControls").style.display = 'none';
@@ -30,46 +43,11 @@ function setRole() {
         document.getElementById("adminControls").style.display = 'none';
         document.getElementById("patientControls").style.display = 'block';
     } else {
-        alert("Dato ingresado inválido. Ingrese 0 si es admin, 1 si es paciente.");
+        outputDiv.innerHTML = "<p>Dato ingresado inválido. Ingrese 0 si es admin, 1 si es paciente.</p>";
     }
 }
 
 // Function to display doctors and their descriptions
-function displayDoctors() {
-    let doctorNames = Object.keys(doctors);
-    let doctorList = "Seleccione un doctor:\n";
-    doctorNames.forEach((doctor, index) => {
-        doctorList += `${index + 1}. Dr. ${doctor}\n`;
-    });
-    return doctorList;
-}
-
-// Function to display available time slots for a selected doctor
-function displayTimeSlots(doctorName) {
-    let timeSlots = doctors[doctorName];
-    let timeSlotList = "Tiempos disponibles para Dr. " + doctorName + ":\n";
-    for (let i = 0; i < timeSlots.length; i++) {
-        timeSlotList += (i + 1) + ". " + timeSlots[i] + "\n";
-    }
-    return timeSlotList;
-}
-
-
-// Function to get the doctor's choice from the user
-function getDoctorChoice() {
-    let doctorList = displayDoctors();
-    let doctorChoice = parseInt(prompt(doctorList)) - 1;
-    return doctorChoice;
-}
-
-// Function to get the time slot choice from the user
-function getTimeSlotChoice(doctorName) {
-    let timeSlotList = displayTimeSlots(doctorName);
-    let timeSlotChoice = parseInt(prompt(timeSlotList)) - 1;
-    return timeSlotChoice;
-}
-
-// Function to show doctors' descriptions in sorted order by name
 function showDoctors() {
     let doctorNames = Object.keys(doctors);
     doctorNames.sort(); // Sorting doctors by name
@@ -82,50 +60,167 @@ function showDoctors() {
         let doctorInfo = `<p><strong>Dr. ${doctor}:</strong> ${doctorDescriptions[doctor]}</p>`;
         outputDiv.innerHTML += doctorInfo;
     });
-}
 
-// Function for admin to modify doctor information
-function modifyDoctorInfo() {
-    let doctorName = prompt("Ingrese el nombre del doctor a modificar:");
-    if (doctors.hasOwnProperty(doctorName)) {
-        let newDescription = prompt("Ingrese la nueva descripción:");
-        let newTimeSlots = prompt("Ingrese el nuevo espacio de tiempo (separado por coma):");
-        doctorDescriptions[doctorName] = newDescription;
-        doctors[doctorName] = newTimeSlots.split(",").map(slot => slot.trim());
-        alert(`La información del doctor ${doctorName} ha sido actualizada.`);
-    } else {
-        alert("Doctor no encontrado.");
+    if (role === 0) {
+        outputDiv.innerHTML += '<h3>Modificar o Eliminar Doctores</h3>';
+        doctorNames.forEach((doctor, index) => {
+            outputDiv.innerHTML += `<p>${index + 1}. Dr. ${doctor} <button onclick="editDoctor('${doctor}')">Editar</button> <button onclick="removeDoctor('${doctor}')">Eliminar</button></p>`;
+        });
     }
 }
 
-// Function for admin to modify scheduled appointments
-function modifyAppointments() {
-    let doctorName = prompt("Ingrese el nombre del doctor a modificar:");
-    if (doctors.hasOwnProperty(doctorName)) {
-        let newTimeSlots = prompt("Ingrese el nuevo espacio de tiempo (separado por coma):");
-        doctors[doctorName] = newTimeSlots.split(",").map(slot => slot.trim());
-        alert(`Las citas del doctor ${doctorName} han sido actualizadas.`);
+
+// Function to add a new doctor
+function addDoctor() {
+    let newDoctorName = prompt("Ingrese el nombre del nuevo doctor:");
+    if (newDoctorName && !doctors.hasOwnProperty(newDoctorName)) {
+        let newDescription = prompt("Ingrese la descripción para Dr. " + newDoctorName + ":");
+        let newTimeSlotsString = prompt("Ingrese los horarios disponibles (separados por coma y en formato de hora AM/PM) para Dr. " + newDoctorName + ":");
+
+        // Convert input string into an array of time slots
+        let newTimeSlots = newTimeSlotsString.split(",").map(slot => slot.trim());
+
+        doctors[newDoctorName] = newTimeSlots;
+        doctorDescriptions[newDoctorName] = newDescription;
+        saveData();
+        document.getElementById("output").innerHTML = `<p>El doctor ${newDoctorName} ha sido agregado exitosamente.</p>`;
+        showDoctors();
+    } else if (doctors.hasOwnProperty(newDoctorName)) {
+        document.getElementById("output").innerHTML = `<p>El doctor ${newDoctorName} ya existe.</p>`;
     } else {
-        alert("Doctor no encontrado.");
+        document.getElementById("output").innerHTML = "<p>Datos ingresados inválidos. El doctor no ha sido agregado.</p>";
+    }
+}
+
+// Function to edit a doctor's information
+function editDoctor(doctorName) {
+    let newDescription = prompt("Ingrese la nueva descripción para Dr. " + doctorName + ":", doctorDescriptions[doctorName]);
+    let newTimeSlots = prompt("Ingrese el nuevo espacio de tiempo (separado por coma) para Dr. " + doctorName + ":", doctors[doctorName].join(", "));
+    doctorDescriptions[doctorName] = newDescription;
+    doctors[doctorName] = newTimeSlots.split(",").map(slot => slot.trim());
+    saveData();
+    document.getElementById("output").innerHTML = `<p>La información del doctor ${doctorName} ha sido actualizada.</p>`;
+    showDoctors();
+}
+
+// Function to remove a doctor
+function removeDoctor(doctorName) {
+    delete doctors[doctorName];
+    delete doctorDescriptions[doctorName];
+    saveData();
+    document.getElementById("output").innerHTML = `<p>El doctor ${doctorName} ha sido eliminado.</p>`;
+    showDoctors();
+}
+
+// Function to display appointments
+function showAppointments() {
+    let outputDiv = document.getElementById("output");
+    outputDiv.innerHTML = "<h2>Citas Programadas:</h2>";
+
+    if (appointments.length === 0) {
+        outputDiv.innerHTML += "<p>No hay citas programadas.</p>";
+    } else {
+        appointments.forEach((appointment, index) => {
+            outputDiv.innerHTML += `<p>${index + 1}. Dr. ${appointment.doctor} - ${appointment.timeSlot} <button onclick="editAppointment(${index})">Editar</button> <button onclick="removeAppointment(${index})">Eliminar</button></p>`;
+        });
+    }
+}
+
+// Function to edit an appointment
+function editAppointment(index) {
+    let appointment = appointments[index];
+    let newDoctor = prompt("Ingrese el nuevo nombre del doctor:", appointment.doctor);
+    let newTimeSlot = prompt("Ingrese el nuevo horario:", appointment.timeSlot);
+
+    if (newDoctor && newTimeSlot) {
+        appointments[index] = {
+            doctor: newDoctor,
+            timeSlot: newTimeSlot
+        };
+        saveData();
+        document.getElementById("output").innerHTML = `<p>La cita ha sido actualizada.</p>`;
+        showAppointments();
+    } else {
+        document.getElementById("output").innerHTML = "<p>Datos ingresados inválidos. La cita no se ha actualizado.</p>";
+    }
+}
+
+// Function to remove an appointment
+function removeAppointment(index) {
+    appointments.splice(index, 1);
+    saveData();
+    document.getElementById("output").innerHTML = "<p>La cita ha sido eliminada.</p>";
+    showAppointments();
+}
+
+// Function to display available time slots for a selected doctor
+function displayTimeSlots(doctorName) {
+    let timeSlots = doctors[doctorName];
+    let timeSlotList = `<h3>Tiempos disponibles para Dr. ${doctorName}:</h3>`;
+    for (let i = 0; i < timeSlots.length; i++) {
+        timeSlotList += `<p>${i + 1}. ${timeSlots[i]}</p>`;
+    }
+    return timeSlotList;
+}
+
+// Function to handle the appointment form submission
+function submitAppointmentForm(event) {
+    event.preventDefault(); // Prevent the default form submission behavior
+
+    const selectedDoctor = document.getElementById("doctorSelect").value;
+    const selectedTimeSlot = document.getElementById("timeSlotSelect").value;
+
+    if (selectedDoctor && selectedTimeSlot) {
+        appointments.push({
+            doctor: selectedDoctor,
+            timeSlot: selectedTimeSlot
+        });
+        saveData();
+        document.getElementById("output").innerHTML = `<p>Tu cita con Dr. ${selectedDoctor} esta confirmada a las ${selectedTimeSlot} horas.</p>`;
+    } else {
+        document.getElementById("output").innerHTML = "<p>Debe seleccionar un doctor y un horario.</p>";
     }
 }
 
 // Main function to schedule an appointment
 function scheduleAppointment() {
     let doctorNames = Object.keys(doctors);
-    let doctorChoice = getDoctorChoice();
+    doctorNames.sort();
 
-    if (doctorChoice >= 0 && doctorChoice < doctorNames.length) {
-        let selectedDoctor = doctorNames[doctorChoice];
-        let timeSlotChoice = getTimeSlotChoice(selectedDoctor);
+    // Creating HTML content for the appointment form
+    let formHtml = `
+        <form id="appointmentForm">
+            <label for="doctorSelect">Seleccione un doctor:</label>
+            <select id="doctorSelect" onchange="updateTimeSlots()">
+                <option value="">Seleccione</option>
+                ${doctorNames.map(doctor => `<option value="${doctor}">Dr. ${doctor}</option>`).join('')}
+            </select>
+            <br>
+            <label for="timeSlotSelect">Seleccione un horario:</label>
+            <select id="timeSlotSelect">
+                <option value="">Seleccione</option>
+            </select>
+            <br>
+            <button type="submit">Confirmar Cita</button>
+        </form>
+    `;
 
-        if (timeSlotChoice >= 0 && timeSlotChoice < doctors[selectedDoctor].length) {
-            let selectedTimeSlot = doctors[selectedDoctor][timeSlotChoice];
-            alert("Tu cita con Dr. " + selectedDoctor + " esta confirmada a las " + selectedTimeSlot + " horas.");
-        } else {
-            alert("Horario seleccionado invalido. Por favor, intente de nuevo.");
-        }
+    document.getElementById("output").innerHTML = formHtml;
+    document.getElementById("appointmentForm").addEventListener("submit", submitAppointmentForm);
+}
+
+// Function to update time slots when a doctor is selected
+function updateTimeSlots() {
+    const doctorSelect = document.getElementById("doctorSelect").value;
+    const timeSlotSelect = document.getElementById("timeSlotSelect");
+
+    if (doctorSelect) {
+        let timeSlots = doctors[doctorSelect];
+        timeSlotSelect.innerHTML = '<option value="">Seleccione</option>' + timeSlots.map(slot => `<option value="${slot}">${slot}</option>`).join('');
     } else {
-        alert("Doctor seleccionado invalido. Por favor, intente de nuevo.");
+        timeSlotSelect.innerHTML = '<option value="">Seleccione</option>';
     }
 }
+
+// Save initial data to localStorage if not already saved
+saveData();
