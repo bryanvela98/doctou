@@ -4,6 +4,8 @@
 <head>
     <title>Mi Cita Medica Virtual</title>
     <link rel="stylesheet" type="text/css" href="/css/styles.css">
+    <!-- Setting up Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
@@ -13,16 +15,51 @@
         <button class="button" onclick="setRole()">Enter</button>
         <div id="adminControls" style="display: none;">
             <button class="button" onclick="showDoctors()">Mostrar Doctores</button>
-            <button class="button" onclick="addDoctor()">Agregar Nuevo Doctor</button>
+            <button class="button" onclick="showAddDoctorForm()">Agregar Nuevo Doctor</button>
             <button class="button" onclick="showAppointments()">Mostrar Citas</button>
         </div>
         <div id="patientControls" style="display: none;">
-            <button class="button" onclick="scheduleAppointment()">Programar una Cita</button>
             <button class="button" onclick="showDoctors()">Mostrar Doctores</button>
+            <button class="button" onclick="scheduleAppointment()">Programar una Cita</button>
         </div>
         <div id="output"></div>
+        <div id="formsContainer">
+            <div id="addDoctorForm" style="display: none;">
+                <h2>Agregar Nuevo Doctor</h2>
+                <form id="doctorForm">
+                    <label for="doctorName">Nombre del Doctor:</label>
+                    <input type="text" id="doctorName" required><br>
+                    <label for="doctorDescription">Descripción:</label>
+                    <textarea id="doctorDescription" required></textarea><br>
+                    <label for="timeSlots">Horarios Disponibles (separados por coma):</label>
+                    <input type="text" id="timeSlots" required><br>
+                    <button type="submit">Agregar Doctor</button>
+                </form>
+            </div>
+            <div id="editAppointmentForm" style="display: none;">
+                <h2>Editar Cita</h2>
+                <form id="appointmentForm">
+                    <label for="editDoctor">Nombre del Doctor:</label>
+                    <input type="text" id="editDoctor" required><br>
+                    <label for="editTimeSlot">Horario:</label>
+                    <input type="text" id="editTimeSlot" required><br>
+                    <input type="hidden" id="appointmentIndex">
+                    <button type="submit">Actualizar Cita</button>
+                </form>
+            </div>
+            <div id="editDoctorForm" style="display: none;">
+                <h2>Editar Doctor</h2>
+                <form id="editDoctorFormContent">
+                    <label for="editDescription">Nueva Descripción:</label>
+                    <textarea id="editDescription" required></textarea><br>
+                    <label for="editTimeSlots">Nuevos Horarios Disponibles (separados por coma):</label>
+                    <input type="text" id="editTimeSlots" required><br>
+                    <input type="hidden" id="editDoctorName">
+                    <button type="submit">Actualizar Doctor</button>
+                </form>
+            </div>
+        </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 

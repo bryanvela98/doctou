@@ -1,0 +1,2 @@
+let doctors = {};
+let doctorDescriptions = {};

@@ -1,23 +1,54 @@
-// Example of some doctors
-const doctors = JSON.parse(localStorage.getItem('doctors')) || {
-    "Bryan": ["10:00 AM", "11:00 AM", "1:00 PM", "3:00 PM"],
-    "Pedro": ["9:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"],
-    "Mario": ["10:30 AM", "11:30 AM", "1:30 PM", "2:30 PM"]
-};
+let doctors = {};
+let doctorDescriptions = {};
 
-const doctorDescriptions = JSON.parse(localStorage.getItem('doctorDescriptions')) || {
-    "Bryan": "Especialista en cardiologia con 10 años de experiencia.",
-    "Pedro": "Experto en neurología con foco en epilepsias.",
-    "Mario": "Medico general."
-};
+// Load appointments from localStorage on page load
+document.addEventListener('DOMContentLoaded', (event) => {
+    appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+});
 
-const appointments = JSON.parse(localStorage.getItem('appointments')) || [];
+// Fetch data from JSON files
+async function loadDoctors() {
+    try {
+        let response = await fetch('doctors.json');
+        let data = await response.json();
+        doctors = data;
+        Object.keys(doctors).forEach(doctor => {
+            doctorDescriptions[doctor] = doctors[doctor].description;
+        });
+    } catch (error) {
+        console.error('Error loading doctors:', error);
+    }
+}
 
+//Loading appointments
+async function loadAppointments() {
+    try {
+        let response = await fetch('appointments.json');
+        let data = await response.json();
+        appointments = data;
+    } catch (error) {
+        console.error('Error loading appointments:', error);
+    }
+}
+
+//Saving appointments
+async function saveAppointments() {
+    try {
+        await fetch('appointments.json', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(appointments)
+        });
+    } catch (error) {
+        console.error('Error saving appointments:', error);
+    }
+}
 // Save doctors, descriptions, and appointments to localStorage
-function saveData() {
-    localStorage.setItem('doctors', JSON.stringify(doctors));
-    localStorage.setItem('doctorDescriptions', JSON.stringify(doctorDescriptions));
+async function saveData() {
     localStorage.setItem('appointments', JSON.stringify(appointments));
+    await saveAppointments();
 }
 
 // Function to handle key press events
@@ -30,8 +61,16 @@ document.getElementById('roleInput').addEventListener('keypress', function (even
 // Role of the user: 0 for admin, 1 for patient
 let role = null;
 
+// Function to hide all forms
+function hideAllForms() {
+    document.getElementById('addDoctorForm').style.display = 'none';
+    document.getElementById('editDoctorForm').style.display = 'none';
+    document.getElementById('editAppointmentForm').style.display = 'none';
+}
+
 // Function to set the role and display relevant controls
 function setRole() {
+    hideAllForms()
     role = parseInt(document.getElementById("roleInput").value);
     const outputDiv = document.getElementById("output");
     outputDiv.innerHTML = ""; // Clear the output div
@@ -49,10 +88,10 @@ function setRole() {
 
 // Function to display doctors and their descriptions
 function showDoctors() {
+    hideAllForms();
     let doctorNames = Object.keys(doctors);
     doctorNames.sort(); // Sorting doctors by name
 
-    // Creating HTML content to display doctor descriptions
     let outputDiv = document.getElementById("output");
     outputDiv.innerHTML = "<h2>Doctores Disponibles:</h2>";
 
@@ -64,56 +103,114 @@ function showDoctors() {
     if (role === 0) {
         outputDiv.innerHTML += '<h3>Modificar o Eliminar Doctores</h3>';
         doctorNames.forEach((doctor, index) => {
-            outputDiv.innerHTML += `<p>${index + 1}. Dr. ${doctor} <button onclick="editDoctor('${doctor}')">Editar</button> <button onclick="removeDoctor('${doctor}')">Eliminar</button></p>`;
+            outputDiv.innerHTML += `<p>${index + 1}. Dr. ${doctor} <button onclick="showEditDoctorForm('${doctor}')">Editar</button> <button onclick="removeDoctor('${doctor}')">Eliminar</button></p>`;
         });
     }
 }
 
 
-// Function to add a new doctor
-function addDoctor() {
-    let newDoctorName = prompt("Ingrese el nombre del nuevo doctor:");
-    if (newDoctorName && !doctors.hasOwnProperty(newDoctorName)) {
-        let newDescription = prompt("Ingrese la descripción para Dr. " + newDoctorName + ":");
-        let newTimeSlotsString = prompt("Ingrese los horarios disponibles (separados por coma y en formato de hora AM/PM) para Dr. " + newDoctorName + ":");
+function showAddDoctorForm() {
+    hideAllForms();
+    document.getElementById('addDoctorForm').style.display = 'block';
+    document.getElementById('output').innerHTML = '';
 
-        // Convert input string into an array of time slots
+}
+// Function to handle the add doctor form submission
+document.getElementById('doctorForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission behavior
+
+    let newDoctorName = document.getElementById('doctorName').value.trim();
+    let newDescription = document.getElementById('doctorDescription').value.trim();
+    let newTimeSlotsString = document.getElementById('timeSlots').value.trim();
+
+    if (newDoctorName && !doctors.hasOwnProperty(newDoctorName)) {
         let newTimeSlots = newTimeSlotsString.split(",").map(slot => slot.trim());
 
-        doctors[newDoctorName] = newTimeSlots;
+        doctors[newDoctorName] = { description: newDescription, timeSlots: newTimeSlots };
         doctorDescriptions[newDoctorName] = newDescription;
         saveData();
-        document.getElementById("output").innerHTML = `<p>El doctor ${newDoctorName} ha sido agregado exitosamente.</p>`;
+        document.getElementById('output').innerHTML = `<p>El doctor ${newDoctorName} ha sido agregado exitosamente.</p>`;
         showDoctors();
+        document.getElementById('doctorForm').reset(); // Reset the form
+        document.getElementById('addDoctorForm').style.display = 'none'; // Hide the form
     } else if (doctors.hasOwnProperty(newDoctorName)) {
-        document.getElementById("output").innerHTML = `<p>El doctor ${newDoctorName} ya existe.</p>`;
+        document.getElementById('output').innerHTML = `<p>El doctor ${newDoctorName} ya existe.</p>`;
     } else {
-        document.getElementById("output").innerHTML = "<p>Datos ingresados inválidos. El doctor no ha sido agregado.</p>";
+        document.getElementById('output').innerHTML = "<p>Datos ingresados inválidos. El doctor no ha sido agregado.</p>";
     }
+});
+
+
+// Function to show the edit doctor form
+function showEditDoctorForm(doctorName) {
+    hideAllForms();
+    document.getElementById('editDoctorName').value = doctorName;
+    document.getElementById('editDescription').value = doctorDescriptions[doctorName];
+    document.getElementById('editTimeSlots').value = doctors[doctorName].timeSlots.join(", ");
+    document.getElementById('editDoctorForm').style.display = 'block';
+    document.getElementById('output').innerHTML = '';
 }
 
-// Function to edit a doctor's information
-function editDoctor(doctorName) {
-    let newDescription = prompt("Ingrese la nueva descripción para Dr. " + doctorName + ":", doctorDescriptions[doctorName]);
-    let newTimeSlots = prompt("Ingrese el nuevo espacio de tiempo (separado por coma) para Dr. " + doctorName + ":", doctors[doctorName].join(", "));
-    doctorDescriptions[doctorName] = newDescription;
-    doctors[doctorName] = newTimeSlots.split(",").map(slot => slot.trim());
-    saveData();
-    document.getElementById("output").innerHTML = `<p>La información del doctor ${doctorName} ha sido actualizada.</p>`;
-    showDoctors();
-}
+// Function to handle the edit doctor form submission
+document.getElementById('editDoctorFormContent').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission behavior
 
-// Function to remove a doctor
+    let doctorName = document.getElementById('editDoctorName').value.trim();
+    let newDescription = document.getElementById('editDescription').value.trim();
+    let newTimeSlotsString = document.getElementById('editTimeSlots').value.trim();
+
+    if (doctorName && newDescription && newTimeSlotsString) {
+        let newTimeSlots = newTimeSlotsString.split(",").map(slot => slot.trim());
+
+        doctorDescriptions[doctorName] = newDescription;
+        doctors[doctorName].timeSlots = newTimeSlots;
+        saveData();
+        document.getElementById('output').innerHTML = `<p>La información del doctor ${doctorName} ha sido actualizada.</p>`;
+        showDoctors();
+        document.getElementById('editDoctorFormContent').reset(); // Reset the form
+        document.getElementById('editDoctorForm').style.display = 'none'; // Hide the form
+    } else {
+        document.getElementById('output').innerHTML = "<p>Datos ingresados inválidos. La información del doctor no se ha actualizado.</p>";
+    }
+});
+
+// Function to remove a doctor with SweetAlert confirmation
 function removeDoctor(doctorName) {
-    delete doctors[doctorName];
-    delete doctorDescriptions[doctorName];
-    saveData();
-    document.getElementById("output").innerHTML = `<p>El doctor ${doctorName} ha sido eliminado.</p>`;
-    showDoctors();
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: `Deseas eliminar al doctor ${doctorName}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Remove the doctor
+            delete doctors[doctorName];
+            delete doctorDescriptions[doctorName];
+            saveData();
+            Swal.fire(
+                'Eliminado!',
+                `El doctor ${doctorName} ha sido eliminado.`,
+                'success'
+            );
+            showDoctors(); // Refresh the list of doctors
+        } else {
+            Swal.fire(
+                'Cancelado',
+                `La eliminación del doctor ${doctorName} ha sido cancelada.`,
+                'info'
+            );
+        }
+    });
 }
+
 
 // Function to display appointments
 function showAppointments() {
+    hideAllForms();
     let outputDiv = document.getElementById("output");
     outputDiv.innerHTML = "<h2>Citas Programadas:</h2>";
 
@@ -121,16 +218,34 @@ function showAppointments() {
         outputDiv.innerHTML += "<p>No hay citas programadas.</p>";
     } else {
         appointments.forEach((appointment, index) => {
-            outputDiv.innerHTML += `<p>${index + 1}. Dr. ${appointment.doctor} - ${appointment.timeSlot} <button onclick="editAppointment(${index})">Editar</button> <button onclick="removeAppointment(${index})">Eliminar</button></p>`;
+            outputDiv.innerHTML += `<p>${index + 1}. Dr. ${appointment.doctor} - ${appointment.timeSlot} <button onclick="showEditAppointmentForm(${index})">Editar</button> <button onclick="removeAppointment(${index})">Eliminar</button></p>`;
         });
     }
 }
+// Function to show the edit appointment form
+function showEditAppointmentForm(index) {
+    // Ensure appointments are loaded from localStorage
+    appointments = JSON.parse(localStorage.getItem('appointments')) || [];
 
-// Function to edit an appointment
-function editAppointment(index) {
     let appointment = appointments[index];
-    let newDoctor = prompt("Ingrese el nuevo nombre del doctor:", appointment.doctor);
-    let newTimeSlot = prompt("Ingrese el nuevo horario:", appointment.timeSlot);
+    if (appointment) {
+        document.getElementById('editDoctor').value = appointment.doctor;
+        document.getElementById('editTimeSlot').value = appointment.timeSlot;
+        document.getElementById('appointmentIndex').value = index;
+        document.getElementById('editAppointmentForm').style.display = 'block';
+        document.getElementById('output').innerHTML = '';
+    } else {
+        document.getElementById('output').innerHTML = '<p>No se encontró la cita para editar.</p>';
+    }
+}
+
+// Function to handle the edit appointment form submission
+document.getElementById('appointmentForm').addEventListener('submit', function(event) {
+    event.preventDefault(); // Prevent the default form submission behavior
+
+    let index = document.getElementById('appointmentIndex').value;
+    let newDoctor = document.getElementById('editDoctor').value.trim();
+    let newTimeSlot = document.getElementById('editTimeSlot').value.trim();
 
     if (newDoctor && newTimeSlot) {
         appointments[index] = {
@@ -138,19 +253,48 @@ function editAppointment(index) {
             timeSlot: newTimeSlot
         };
         saveData();
-        document.getElementById("output").innerHTML = `<p>La cita ha sido actualizada.</p>`;
+        document.getElementById('output').innerHTML = `<p>La cita ha sido actualizada.</p>`;
         showAppointments();
+        document.getElementById('appointmentForm').reset(); // Reset the form
+        document.getElementById('editAppointmentForm').style.display = 'none'; // Hide the form
     } else {
-        document.getElementById("output").innerHTML = "<p>Datos ingresados inválidos. La cita no se ha actualizado.</p>";
+        document.getElementById('output').innerHTML = "<p>Datos ingresados inválidos. La cita no se ha actualizado.</p>";
     }
-}
+});
 
-// Function to remove an appointment
+
+// Function to remove an appointment with confirmation
 function removeAppointment(index) {
-    appointments.splice(index, 1);
-    saveData();
-    document.getElementById("output").innerHTML = "<p>La cita ha sido eliminada.</p>";
-    showAppointments();
+    let appointment = appointments[index];
+    
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: `Deseas eliminar la cita con Dr. ${appointment.doctor} a las ${appointment.timeSlot}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Remove the appointment
+            appointments.splice(index, 1);
+            saveData();
+            Swal.fire(
+                'Eliminado!',
+                'La cita ha sido eliminada.',
+                'success'
+            );
+            showAppointments(); // Refresh the list of appointments
+        } else {
+            Swal.fire(
+                'Cancelado',
+                'La eliminación de la cita ha sido cancelada.',
+                'info'
+            );
+        }
+    });
 }
 
 // Function to display available time slots for a selected doctor
@@ -176,51 +320,55 @@ function submitAppointmentForm(event) {
             timeSlot: selectedTimeSlot
         });
         saveData();
-        document.getElementById("output").innerHTML = `<p>Tu cita con Dr. ${selectedDoctor} esta confirmada a las ${selectedTimeSlot} horas.</p>`;
+        Swal.fire({
+            title: 'Cita Confirmada',
+            text: `Tu cita con Dr. ${selectedDoctor} está confirmada a las ${selectedTimeSlot} horas.`,
+            icon: 'success'
+        });
     } else {
-        document.getElementById("output").innerHTML = "<p>Debe seleccionar un doctor y un horario.</p>";
+        Swal.fire({
+            title: 'Error',
+            text: 'Debe seleccionar un doctor y un horario.',
+            icon: 'error'
+        });
     }
 }
 
 // Main function to schedule an appointment
 function scheduleAppointment() {
-    let doctorNames = Object.keys(doctors);
-    doctorNames.sort();
-
-    // Creating HTML content for the appointment form
-    let formHtml = `
+    let outputDiv = document.getElementById("output");
+    outputDiv.innerHTML = `<h2>Programar una Cita</h2>
         <form id="appointmentForm">
-            <label for="doctorSelect">Seleccione un doctor:</label>
+            <label for="doctorSelect">Seleccione un Doctor:</label>
             <select id="doctorSelect" onchange="updateTimeSlots()">
                 <option value="">Seleccione</option>
-                ${doctorNames.map(doctor => `<option value="${doctor}">Dr. ${doctor}</option>`).join('')}
-            </select>
-            <br>
-            <label for="timeSlotSelect">Seleccione un horario:</label>
+                ${Object.keys(doctors).map(doctor => `<option value="${doctor}">Dr. ${doctor}</option>`).join('')}
+            </select><br>
+            <label for="timeSlotSelect">Seleccione un Horario:</label>
             <select id="timeSlotSelect">
                 <option value="">Seleccione</option>
-            </select>
-            <br>
-            <button type="submit">Confirmar Cita</button>
-        </form>
-    `;
-
-    document.getElementById("output").innerHTML = formHtml;
-    document.getElementById("appointmentForm").addEventListener("submit", submitAppointmentForm);
+            </select><br>
+            <button class="button" onclick="submitAppointmentForm(event)">Confirmar Cita</button>
+        </form>`;
 }
 
 // Function to update time slots when a doctor is selected
 function updateTimeSlots() {
-    const doctorSelect = document.getElementById("doctorSelect").value;
-    const timeSlotSelect = document.getElementById("timeSlotSelect");
+    let doctorSelect = document.getElementById("doctorSelect");
+    let selectedDoctor = doctorSelect.value;
+    let timeSlotSelect = document.getElementById("timeSlotSelect");
 
-    if (doctorSelect) {
-        let timeSlots = doctors[doctorSelect];
-        timeSlotSelect.innerHTML = '<option value="">Seleccione</option>' + timeSlots.map(slot => `<option value="${slot}">${slot}</option>`).join('');
+    if (selectedDoctor) {
+        let timeSlots = doctors[selectedDoctor].timeSlots;
+        timeSlotSelect.innerHTML = timeSlots.map(slot => `<option value="${slot}">${slot}</option>`).join('');
     } else {
         timeSlotSelect.innerHTML = '<option value="">Seleccione</option>';
     }
 }
 
-// Save initial data to localStorage if not already saved
-saveData();
+// Load initial data and initialize the application
+loadDoctors().then(() => {
+    loadAppointments().then(() => {
+        saveData();
+    });
+});

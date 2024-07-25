@@ -1,0 +1,14 @@
+{
+    "Bryan": {
+        "description": "Especialista en cardiologia con 10 años de experiencia.",
+        "timeSlots": ["10:00 AM", "11:00 AM", "1:00 PM", "3:00 PM"]
+    },
+    "Pedro": {
+        "description": "Experto en neurología con foco en epilepsias.",
+        "timeSlots": ["9:00 AM", "12:00 PM", "2:00 PM", "4:00 PM"]
+    },
+    "Mario": {
+        "description": "Medico general.",
+        "timeSlots": ["10:30 AM", "11:30 AM", "1:30 PM", "2:30 PM"]
+    }
+}
